@@ -24,7 +24,7 @@
 
 ## Features
 
-- Drop an `.app` onto the window or pick one with **Choose…**.
+- Drop an `.app` onto the window or onto the **App Renamer icon in the Dock**, or pick one with **Choose…**. Drop an image together with it (or on its own) to use it as the new icon. **Open With → App Renamer** in Finder works too.
 - **Name**: updates `CFBundleName`, `CFBundleDisplayName`, the `.app` folder name and localized names in `*.lproj/InfoPlist.strings`.
 - **Bundle ID**: updates `CFBundleIdentifier`.
 - **Icon**: PNG, JPEG, HEIC or ICNS. The image is turned into an `.icns` with every required size, and it overrides an icon from `Assets.car` too.

@@ -216,6 +216,13 @@ final class ViewModel: ObservableObject {
         log = []
     }
 
+    /// Files opened via the Dock icon, Finder's "Open With" or the command line:
+    /// the first .app is loaded, the first image becomes the new icon.
+    func open(_ urls: [URL]) {
+        if let app = urls.first(where: { $0.pathExtension == "app" }) { load(app) }
+        if let image = urls.first(where: { $0.pathExtension != "app" }) { setIcon(image) }
+    }
+
     static let imageTypes: [UTType] = [.png, .jpeg, .tiff, .heic, .icns, .image]
 
     func setIcon(_ url: URL) {
@@ -284,7 +291,7 @@ final class ViewModel: ObservableObject {
 }
 
 struct ContentView: View {
-    @StateObject var vm = ViewModel()
+    @ObservedObject var vm: ViewModel
     @State var dropTargeted = false
 
     var body: some View {
@@ -308,8 +315,7 @@ struct ContentView: View {
         .onAppear {
             // `open -a AppRenamer --args /path/App.app [/path/icon.png]`
             let args = CommandLine.arguments.dropFirst().filter { FileManager.default.fileExists(atPath: $0) }
-            if let app = args.first(where: { $0.hasSuffix(".app") }) { vm.load(URL(fileURLWithPath: app)) }
-            if let icon = args.first(where: { !$0.hasSuffix(".app") }) { vm.setIcon(URL(fileURLWithPath: icon)) }
+            if !args.isEmpty { vm.open(args.map { URL(fileURLWithPath: $0) }) }
         }
     }
 
@@ -419,10 +425,26 @@ struct ContentView: View {
     }
 }
 
+@MainActor
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    let vm = ViewModel()
+
+    // Drop on the Dock icon / "Open With" in Finder. Also fires on a cold start.
+    func application(_ application: NSApplication, open urls: [URL]) {
+        vm.open(urls)
+        NSApp.activate()
+    }
+
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
+}
+
 @main
 struct AppRenamerApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
+
     var body: some Scene {
-        WindowGroup("App Renamer") { ContentView() }
+        // A single window: opened files go to it instead of spawning new ones.
+        Window("App Renamer", id: "main") { ContentView(vm: delegate.vm) }
             .windowResizability(.contentSize)
     }
 }
