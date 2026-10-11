@@ -40,7 +40,8 @@ func run(_ tool: String, _ args: [String]) throws -> String {
     p.waitUntilExit()
     let out = String(decoding: data, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
     if p.terminationStatus != 0 {
-        throw RenameError.message("\((tool as NSString).lastPathComponent) завершился с кодом \(p.terminationStatus): \(out)")
+        let name = (tool as NSString).lastPathComponent, code = Int(p.terminationStatus)
+        throw RenameError.message(String(localized: "\(name) exited with code \(code): \(out)"))
     }
     return out
 }
@@ -50,7 +51,7 @@ func editPlist(_ url: URL, _ edit: (inout [String: Any]) -> Bool) throws {
     let data = try Data(contentsOf: url)
     var format = PropertyListSerialization.PropertyListFormat.xml
     guard var dict = try PropertyListSerialization.propertyList(from: data, options: [], format: &format) as? [String: Any] else {
-        throw RenameError.message("Не удалось прочитать \(url.lastPathComponent)")
+        throw RenameError.message(String(localized: "Can't read \(url.lastPathComponent)"))
     }
     guard edit(&dict) else { return }
     // OpenStep (.strings) can't be written back — save as XML, bundles accept it.
@@ -68,7 +69,7 @@ func writeICNS(from source: URL, to dest: URL) throws {
         return
     }
     guard let image = NSImage(contentsOf: source) else {
-        throw RenameError.message("Не удалось открыть картинку \(source.lastPathComponent)")
+        throw RenameError.message(String(localized: "Can't open image \(source.lastPathComponent)"))
     }
     let iconset = fm.temporaryDirectory
         .appendingPathComponent(UUID().uuidString).appendingPathExtension("iconset")
@@ -120,25 +121,25 @@ func process(_ app: AppInfo, _ o: Options, log: @escaping (String) -> Void) thro
     var work = app.url
     if o.makeCopy {
         guard !fm.fileExists(atPath: target.path) else {
-            throw RenameError.message("\(target.lastPathComponent) уже существует в \(parent.path)")
+            throw RenameError.message(String(localized: "\(target.lastPathComponent) already exists in \(parent.path)"))
         }
-        log("Копирую в \(target.path)…")
+        log(String(localized: "Copying to \(target.path)…"))
         try run("/usr/bin/ditto", [app.url.path, target.path])
         work = target
     } else if nameChanged && fm.fileExists(atPath: target.path) {
-        throw RenameError.message("\(target.lastPathComponent) уже существует")
+        throw RenameError.message(String(localized: "\(target.lastPathComponent) already exists"))
     }
 
     let contents = work.appendingPathComponent("Contents")
     let resources = contents.appendingPathComponent("Resources")
     let iconFileName = "AppRenamerIcon"
     if let icon = o.newIcon {
-        log("Собираю иконку из \(icon.lastPathComponent)…")
+        log(String(localized: "Building icon from \(icon.lastPathComponent)…"))
         try fm.createDirectory(at: resources, withIntermediateDirectories: true)
         try writeICNS(from: icon, to: resources.appendingPathComponent(iconFileName).appendingPathExtension("icns"))
     }
 
-    log("Правлю Info.plist…")
+    log(String(localized: "Updating Info.plist…"))
     try editPlist(contents.appendingPathComponent("Info.plist")) { d in
         d["CFBundleIdentifier"] = o.newBundleID
         d["CFBundleName"] = o.newName
@@ -161,24 +162,24 @@ func process(_ app: AppInfo, _ o: Options, log: @escaping (String) -> Void) thro
                 for key in ["CFBundleName", "CFBundleDisplayName"] where d[key] != nil {
                     d[key] = o.newName; changed = true
                 }
-                if changed { log("Обновил \(lproj.lastPathComponent)/InfoPlist.strings") }
+                if changed { log(String(localized: "Updated \(lproj.lastPathComponent)/InfoPlist.strings")) }
                 return changed
             }
         }
     }
 
     if !o.makeCopy && nameChanged {
-        log("Переименовываю в \(target.lastPathComponent)…")
+        log(String(localized: "Renaming to \(target.lastPathComponent)…"))
         try fm.moveItem(at: work, to: target)
         work = target
     }
 
     if o.removeQuarantine {
-        log("Снимаю карантин…")
+        log(String(localized: "Removing quarantine…"))
         _ = try? run("/usr/bin/xattr", ["-dr", "com.apple.quarantine", work.path])
     }
     if o.resign {
-        log("Переподписываю ad-hoc…")
+        log(String(localized: "Re-signing ad-hoc…"))
         try run("/usr/bin/codesign", ["--force", "--deep", "--sign", "-", work.path])
     }
 
@@ -205,7 +206,7 @@ final class ViewModel: ObservableObject {
 
     func load(_ url: URL) {
         guard let info = loadAppInfo(url) else {
-            log = ["Это не .app: \(url.path)"]; return
+            log = [String(localized: "Not an .app: \(url.path)")]; return
         }
         app = info
         newName = info.url.deletingPathExtension().lastPathComponent
@@ -219,7 +220,7 @@ final class ViewModel: ObservableObject {
 
     func setIcon(_ url: URL) {
         guard let img = NSImage(contentsOf: url) else {
-            log = ["Не удалось открыть картинку: \(url.lastPathComponent)"]; return
+            log = [String(localized: "Can't open image \(url.lastPathComponent)")]; return
         }
         newIcon = url
         newIconPreview = img
@@ -228,7 +229,7 @@ final class ViewModel: ObservableObject {
     func chooseIcon() {
         let panel = NSOpenPanel()
         panel.allowedContentTypes = Self.imageTypes
-        panel.message = "Квадратная картинка от 512×512, лучше 1024×1024 PNG с прозрачностью"
+        panel.message = String(localized: "A square image, at least 512×512. Best: 1024×1024 PNG with transparency")
         if panel.runModal() == .OK, let url = panel.url { setIcon(url) }
     }
 
@@ -242,10 +243,10 @@ final class ViewModel: ObservableObject {
 
     var validationError: String? {
         let name = newName.trimmingCharacters(in: .whitespaces)
-        if name.isEmpty { return "Имя пустое" }
-        if name.contains("/") || name.contains(":") { return "Имя не должно содержать / или :" }
+        if name.isEmpty { return String(localized: "Name is empty") }
+        if name.contains("/") || name.contains(":") { return String(localized: "Name must not contain / or :") }
         if newBundleID.range(of: #"^[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$"#, options: .regularExpression) == nil {
-            return "Bundle ID: только латиница, цифры, «-» и точки (например com.example.app)"
+            return String(localized: "Bundle ID: Latin letters, digits, “-” and dots only (e.g. com.example.app)")
         }
         return nil
     }
@@ -265,14 +266,14 @@ final class ViewModel: ObservableObject {
                     let logSoFar = self.log
                     self.busy = false
                     if let info = loadAppInfo(result) { self.load(info.url) }
-                    self.log = logSoFar + ["✅ Готово: \(result.path)"]
+                    self.log = logSoFar + [String(localized: "✅ Done: \(result.path)")]
                     NSWorkspace.shared.activateFileViewerSelecting([result])
                 }
             } catch {
                 await MainActor.run {
                     var msg = "❌ \(error.localizedDescription)"
                     if (error as NSError).code == NSFileWriteNoPermissionError || "\(error)".contains("ermission") {
-                        msg += "\nПопробуйте режим «Создать копию» или дайте приложению доступ: Системные настройки → Конфиденциальность → Управление приложениями."
+                        msg += "\n" + String(localized: "Try “Make a copy” mode, or allow access in System Settings → Privacy & Security → App Management.")
                     }
                     self.log.append(msg)
                     self.busy = false
@@ -306,7 +307,7 @@ struct ContentView: View {
         .frame(width: 520)
         .onAppear {
             // `open -a AppRenamer --args /path/App.app [/path/icon.png]`
-            let args = CommandLine.arguments.dropFirst().filter { !$0.hasPrefix("-") }
+            let args = CommandLine.arguments.dropFirst().filter { FileManager.default.fileExists(atPath: $0) }
             if let app = args.first(where: { $0.hasSuffix(".app") }) { vm.load(URL(fileURLWithPath: app)) }
             if let icon = args.first(where: { !$0.hasSuffix(".app") }) { vm.setIcon(URL(fileURLWithPath: icon)) }
         }
@@ -323,10 +324,10 @@ struct ContentView: View {
                 }
             } else {
                 Image(systemName: "app.dashed").font(.system(size: 40)).foregroundStyle(.secondary)
-                Text("Перетащите сюда .app или выберите вручную").foregroundStyle(.secondary)
+                Text("Drop an .app here or choose one").foregroundStyle(.secondary)
             }
             Spacer()
-            Button("Выбрать…") { vm.choose() }
+            Button("Choose…") { vm.choose() }
         }
         .padding(14)
         .frame(maxWidth: .infinity, minHeight: 84)
@@ -366,14 +367,14 @@ struct ContentView: View {
                 }
                 return true
             }
-            .help("Нажмите или перетащите картинку")
+            .help("Click or drop an image")
     }
 
     var form: some View {
         VStack(alignment: .leading, spacing: 12) {
             Grid(alignment: .leading, horizontalSpacing: 10, verticalSpacing: 10) {
                 GridRow {
-                    Text("Новое имя").gridColumnAlignment(.trailing)
+                    Text("New name").gridColumnAlignment(.trailing)
                     TextField("", text: $vm.newName).textFieldStyle(.roundedBorder)
                 }
                 GridRow {
@@ -381,33 +382,36 @@ struct ContentView: View {
                     TextField("", text: $vm.newBundleID).textFieldStyle(.roundedBorder)
                 }
                 GridRow(alignment: .center) {
-                    Text("Иконка")
+                    Text("Icon")
                     HStack(spacing: 10) {
                         iconWell
                         VStack(alignment: .leading, spacing: 4) {
                             HStack {
-                                Button("Выбрать картинку…") { vm.chooseIcon() }
+                                Button("Choose image…") { vm.chooseIcon() }
                                 if vm.newIcon != nil {
-                                    Button("Оставить текущую") { vm.newIcon = nil; vm.newIconPreview = nil }
+                                    Button("Keep current") { vm.newIcon = nil; vm.newIconPreview = nil }
                                 }
                             }
-                            Text(vm.newIcon?.lastPathComponent ?? "PNG, JPEG, HEIC или ICNS. Можно перетащить на квадрат.")
+                            Group {
+                                if let icon = vm.newIcon { Text(icon.lastPathComponent) }
+                                else { Text("PNG, JPEG, HEIC or ICNS. You can drop it on the square.") }
+                            }
                                 .font(.caption).foregroundStyle(.secondary)
                                 .lineLimit(1).truncationMode(.middle)
                         }
                     }
                 }
             }
-            Toggle("Создать копию (оригинал не трогать)", isOn: $vm.makeCopy)
-            Toggle("Переподписать ad-hoc (иначе приложение может не запуститься)", isOn: $vm.resign)
-            Toggle("Снять карантин", isOn: $vm.removeQuarantine)
+            Toggle("Make a copy (keep the original untouched)", isOn: $vm.makeCopy)
+            Toggle("Re-sign ad-hoc (otherwise the app may not launch)", isOn: $vm.resign)
+            Toggle("Remove quarantine", isOn: $vm.removeQuarantine)
             HStack {
                 if let err = vm.validationError {
                     Text(err).font(.caption).foregroundStyle(.red)
                 }
                 Spacer()
                 if vm.busy { ProgressView().controlSize(.small) }
-                Button("Применить") { vm.apply() }
+                Button("Apply") { vm.apply() }
                     .keyboardShortcut(.defaultAction)
                     .disabled(vm.busy || vm.validationError != nil)
             }

@@ -1,0 +1,38 @@
+/* Window */
+"Drop an .app here or choose one" = "Перетащите сюда .app или выберите вручную";
+"Choose…" = "Выбрать…";
+"New name" = "Новое имя";
+"Icon" = "Иконка";
+"Choose image…" = "Выбрать картинку…";
+"Keep current" = "Оставить текущую";
+"Click or drop an image" = "Нажмите или перетащите картинку";
+"PNG, JPEG, HEIC or ICNS. You can drop it on the square." = "PNG, JPEG, HEIC или ICNS. Можно перетащить на квадрат.";
+"Make a copy (keep the original untouched)" = "Создать копию (оригинал не трогать)";
+"Re-sign ad-hoc (otherwise the app may not launch)" = "Переподписать ad-hoc (иначе приложение может не запуститься)";
+"Remove quarantine" = "Снять карантин";
+"Apply" = "Применить";
+"A square image, at least 512×512. Best: 1024×1024 PNG with transparency" = "Квадратная картинка от 512×512, лучше 1024×1024 PNG с прозрачностью";
+
+/* Validation */
+"Name is empty" = "Имя пустое";
+"Name must not contain / or :" = "Имя не должно содержать / или :";
+"Bundle ID: Latin letters, digits, “-” and dots only (e.g. com.example.app)" = "Bundle ID: только латиница, цифры, «-» и точки (например com.example.app)";
+
+/* Log */
+"Copying to %@…" = "Копирую в %@…";
+"Building icon from %@…" = "Собираю иконку из %@…";
+"Updating Info.plist…" = "Правлю Info.plist…";
+"Updated %@/InfoPlist.strings" = "Обновил %@/InfoPlist.strings";
+"Renaming to %@…" = "Переименовываю в %@…";
+"Removing quarantine…" = "Снимаю карантин…";
+"Re-signing ad-hoc…" = "Переподписываю ad-hoc…";
+"✅ Done: %@" = "✅ Готово: %@";
+"Not an .app: %@" = "Это не .app: %@";
+
+/* Errors */
+"%@ exited with code %lld: %@" = "%1$@ завершился с кодом %2$lld: %3$@";
+"Can't read %@" = "Не удалось прочитать %@";
+"Can't open image %@" = "Не удалось открыть картинку %@";
+"%@ already exists in %@" = "%1$@ уже существует в %2$@";
+"%@ already exists" = "%@ уже существует";
+"Try “Make a copy” mode, or allow access in System Settings → Privacy & Security → App Management." = "Попробуйте режим «Создать копию» или дайте приложению доступ: Системные настройки → Конфиденциальность и безопасность → Управление приложениями.";
