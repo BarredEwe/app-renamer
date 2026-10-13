@@ -40,10 +40,11 @@
 
 1. Download `AppRenamer.zip` from [Releases](../../releases/latest) and unzip it.
 2. Move `AppRenamer.app` to `/Applications`.
-3. The app isn't notarized, so on first launch **right-click → Open** it, or clear the quarantine flag:
+3. The app isn't notarized, so clear the quarantine flag before the first launch:
    ```bash
    xattr -dr com.apple.quarantine /Applications/AppRenamer.app
    ```
+   Or launch it once, then click **Open Anyway** in **System Settings → Privacy & Security**.
 
 ### From source
 
