@@ -5,6 +5,8 @@
 "Icon" = "Иконка";
 "Choose image…" = "Выбрать картинку…";
 "Keep current" = "Оставить текущую";
+"Generate a random name and bundle ID" = "Сгенерировать случайное имя и bundle ID";
+"Generate a bundle ID for this name" = "Сгенерировать bundle ID для этого имени";
 "Click or drop an image" = "Нажмите или перетащите картинку";
 "PNG, JPEG, HEIC or ICNS. You can drop it on the square." = "PNG, JPEG, HEIC или ICNS. Можно перетащить на квадрат.";
 "Make a copy (keep the original untouched)" = "Создать копию (оригинал не трогать)";

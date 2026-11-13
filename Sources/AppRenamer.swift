@@ -189,6 +189,48 @@ func process(_ app: AppInfo, _ o: Options, log: @escaping (String) -> Void) thro
     return work
 }
 
+// MARK: - Random identity
+
+/// Coined, plausible-looking identities in the style of real indie apps — not UUID gibberish.
+enum Identity {
+    private static let lead = ["Al", "Astra", "Bram", "Cor", "Cy", "Dawn", "Delft", "Dura", "Dyna",
+                               "Echo", "Ember", "Fern", "Flux", "Glim", "Halo", "Lith", "Lumo", "Lyn",
+                               "Mesa", "Mira", "Nimb", "Nova", "Orb", "Ora", "Pix", "Quil", "Rial",
+                               "Rune", "Sable", "Sola", "Tess", "Tide", "Umbra", "Vale", "Vel", "Vio",
+                               "Wind", "Wren", "Zest", "Zephy"]
+    /// Word halves mixed into a made-up brand word ("Mira" + "fy" → "Mirafy").
+    private static let tail = ["bit", "by", "do", "dust", "elo", "fy", "ify", "ix", "kin", "line", "lo",
+                               "loom", "matic", "mo", "na", "nest", "ora", "ra", "ry", "soft", "spark",
+                               "stone", "spring", "tide", "ura", "va", "vector", "wave", "wise"]
+    /// Real-ish second words for compound names ("… Flow", "… Studio").
+    private static let words = ["Board", "Books", "Deck", "Desk", "Flow", "Hub", "Ink", "Kit", "List",
+                                "Maker", "Mate", "Notes", "Pal", "Player", "Studio", "Sync", "Vault"]
+    private static let tlds = ["com", "io", "net", "co", "app", "dev"]
+
+    private static func pick<T>(_ a: [T]) -> T { a.randomElement()! }
+    /// Coined brand word: "Mira" + "fy" → "Mirafy".
+    private static func word() -> String { pick(lead) + pick(tail) }
+
+    /// A plausible app name: a coined word, sometimes with a compound second word ("Tide Maker").
+    static func appName() -> String {
+        let w = word()
+        return Int.random(in: 0..<100) < 30 ? "\(w) \(pick(words))" : w
+    }
+
+    /// The bundle ID matching a name — `com.company.appslug`, sometimes the shorter `company.appslug`.
+    /// Pass the app name to build the slug ("Mira Flow" → "miraflow"); otherwise invents one.
+    static func bundleID(for name: String? = nil) -> String {
+        let app = slug(name?.isEmpty == false ? name! : appName())
+        let company = slug(word())
+        return Int.random(in: 0..<100) < 15 ? "\(company).\(app)" : "\(pick(tlds)).\(company).\(app)"
+    }
+
+    /// "Mira Flow" → "miraflow": lowercase, Latin letters and digits only — valid in a bundle ID.
+    private static func slug(_ s: String) -> String {
+        String(s.lowercased().filter { ($0.isLetter && $0.isASCII) || $0.isNumber })
+    }
+}
+
 // MARK: - UI
 
 @MainActor
@@ -248,6 +290,12 @@ final class ViewModel: ObservableObject {
         if panel.runModal() == .OK, let url = panel.url { load(url) }
     }
 
+    /// Picks a fresh name and a matching bundle ID together.
+    func randomize() {
+        newName = Identity.appName()
+        newBundleID = Identity.bundleID(for: newName)
+    }
+
     var validationError: String? {
         let name = newName.trimmingCharacters(in: .whitespaces)
         if name.isEmpty { return String(localized: "Name is empty") }
@@ -287,6 +335,27 @@ final class ViewModel: ObservableObject {
                 }
             }
         }
+    }
+}
+
+/// The sparkle button next to a field: generates a value and bounces to confirm it.
+struct GenerateButton: View {
+    let help: LocalizedStringKey
+    let action: () -> Void
+    @State private var rolls = 0
+
+    var body: some View {
+        Button {
+            rolls += 1
+            action()
+        } label: {
+            Image(systemName: "sparkles")
+                .symbolRenderingMode(.hierarchical)
+                .symbolEffect(.bounce, value: rolls)
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.small)
+        .help(help)
     }
 }
 
@@ -381,11 +450,20 @@ struct ContentView: View {
             Grid(alignment: .leading, horizontalSpacing: 10, verticalSpacing: 10) {
                 GridRow {
                     Text("New name").gridColumnAlignment(.trailing)
-                    TextField("", text: $vm.newName).textFieldStyle(.roundedBorder)
+                    HStack(spacing: 6) {
+                        TextField("", text: $vm.newName).textFieldStyle(.roundedBorder)
+                        GenerateButton(help: "Generate a random name and bundle ID") { vm.randomize() }
+                    }
                 }
                 GridRow {
                     Text("Bundle ID")
-                    TextField("", text: $vm.newBundleID).textFieldStyle(.roundedBorder)
+                    HStack(spacing: 6) {
+                        TextField("", text: $vm.newBundleID).textFieldStyle(.roundedBorder)
+                        // The name is already chosen, so only the ID is generated from it.
+                        GenerateButton(help: "Generate a bundle ID for this name") {
+                            vm.newBundleID = Identity.bundleID(for: vm.newName)
+                        }
+                    }
                 }
                 GridRow(alignment: .center) {
                     Text("Icon")

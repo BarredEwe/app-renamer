@@ -28,6 +28,7 @@
 - **Name**: updates `CFBundleName`, `CFBundleDisplayName`, the `.app` folder name and localized names in `*.lproj/InfoPlist.strings`.
 - **Bundle ID**: updates `CFBundleIdentifier`.
 - **Icon**: PNG, JPEG, HEIC or ICNS. The image is turned into an `.icns` with every required size, and it overrides an icon from `Assets.car` too.
+- **✨ Generated identity**: the sparkle button by each field invents a plausible name and a matching bundle ID — coined brand words like “Viosoft” or “Valenest Hub”, with bundle IDs like `io.runetide.viosoft`, not UUID gibberish.
 - **Copy mode** (on by default): the original stays untouched, and `New Name.app` appears next to it.
 - **Ad-hoc re-signing** after the changes. Without it, macOS refuses to launch the modified app.
 - **Quarantine removal** (`com.apple.quarantine`).
